@@ -1,0 +1,39 @@
+# 依赖
+node_modules/
+backend/__pycache__/
+__pycache__/
+*.pyc
+
+# 环境与密钥
+backend/.env
+.env
+*.local
+
+# 运行时产物
+backend/.server.pid
+backend.log
+frontend.log
+npm-debug.log*
+
+# 项目内部数据（非源码）
+.workbuddy/
+
+# 智能体/环境工具目录（非本项目源码）
+.claude/
+.agents/
+skills-lock.json
+
+# 系统文件
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# git bash 误建的设备名文件（Windows 保留名，无法删除，仅忽略）
+nul
+
+# 根目录交付文档不入库（实验报告/PPT/设计文档仅本地留存）
+/*.docx
+/*.pptx
+/*.md
+/*.png
