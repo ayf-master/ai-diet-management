@@ -19,7 +19,7 @@
       </div>
 
       <div class="nav-right">
-        <router-link to="/dashboard" class="nav-home-btn">返回主页</router-link>
+        <router-link :to="isAdmin ? '/admin/foods' : '/dashboard'" class="nav-home-btn">返回主页</router-link>
         <span class="nav-user">{{ username }}</span>
         <button class="btn btn-sm" style="background:#111;color:#fff;border:none;padding:4px 12px;border-radius:4px" @click="logout">退出</button>
       </div>

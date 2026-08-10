@@ -22,8 +22,8 @@
       <thead>
         <tr><th>名称</th><th>分类</th><th>热量/100g</th><th>蛋白质</th><th>脂肪</th><th>碳水</th><th>操作</th></tr>
       </thead>
-      <tbody>
-        <tr v-for="f in foods" :key="f.food_id">
+      <TransitionGroup name="card" tag="tbody" appear>
+        <tr v-for="(f, i) in foods" :key="f.food_id" :style="{ '--i': i }">
           <td>{{ f.food_name }}</td>
           <td>{{ f.category_name }}</td>
           <td>{{ f.nutrition?.calorie || 0 }}</td>
@@ -35,7 +35,7 @@
             <button class="btn btn-sm btn-danger" style="margin-left:4px" @click="delFood(f.food_id)">删除</button>
           </td>
         </tr>
-      </tbody>
+      </TransitionGroup>
     </table>
 
     <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
@@ -155,4 +155,22 @@ onMounted(loadFoods)
 .table th, .table td { padding: 10px 14px; text-align: left; font-size: 14px; }
 .table th { background: var(--bg); font-weight: 600; }
 .table td { border-top: 1px solid var(--border); }
+
+/* 行入场（级联，逐条由上到下淡入，与用户页面一致） */
+.card-enter-active {
+  animation: card-in 0.4s ease-out both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-leave-active {
+  animation: card-out 0.25s ease-in both;
+}
+@keyframes card-out {
+  to { opacity: 0; transform: scale(0.85) translateY(-6px); }
+}
+.card-move { transition: transform 0.35s ease; }
+.table tbody { position: relative; }
 </style>

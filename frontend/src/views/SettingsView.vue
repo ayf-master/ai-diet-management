@@ -344,10 +344,20 @@ async function onAvatarChange(e) {
 }
 
 async function removeAvatar() {
-  rawAvatarUrl.value = ''
-  user.avatar_url = ''
-  sessionStorage.setItem('user', JSON.stringify(user))
-  avatarMsg.value = '头像已移除（刷新后生效）'
+  if (!user.user_id) return
+  try {
+    const r = await api.removeAvatar(user.user_id)
+    if (r.code === 200) {
+      rawAvatarUrl.value = ''
+      user.avatar_url = ''
+      sessionStorage.setItem('user', JSON.stringify(user))
+      avatarMsg.value = '头像已移除'
+    } else {
+      avatarMsg.value = r.msg || '移除失败'
+    }
+  } catch (e) {
+    avatarMsg.value = '网络错误'
+  }
 }
 
 async function loadCookPrefs() {

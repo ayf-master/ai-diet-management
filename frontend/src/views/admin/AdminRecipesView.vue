@@ -13,8 +13,8 @@
       <thead>
         <tr><th>名称</th><th>餐次</th><th>专区</th><th>烹饪方式</th><th>热量</th><th>操作</th></tr>
       </thead>
-      <tbody>
-        <tr v-for="r in recipes" :key="r.recipe_id">
+      <TransitionGroup name="card" tag="tbody" appear>
+        <tr v-for="(r, i) in recipes" :key="r.recipe_id" :style="{ '--i': i }">
           <td>{{ r.recipe_name }}</td>
           <td>{{ r.type }}</td>
           <td><span class="badge" :class="'badge-' + r.suitable_goals">{{ r.suitable_goals }}</span></td>
@@ -25,7 +25,7 @@
             <button class="btn btn-sm btn-danger" style="margin-left:4px" @click="delRecipe(r.recipe_id)">删除</button>
           </td>
         </tr>
-      </tbody>
+      </TransitionGroup>
     </table>
 
     <div v-if="showForm" class="modal-overlay" @click.self="showForm = false">
@@ -209,4 +209,22 @@ onMounted(async () => {
 .add-ingredient { display: flex; gap: 8px; margin-top: 8px; }
 .ing-row { display: flex; gap: 12px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
 .ing-row span:first-child { flex: 1; }
+
+/* 行入场（级联，逐条由上到下淡入，与用户页面一致） */
+.card-enter-active {
+  animation: card-in 0.4s ease-out both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-leave-active {
+  animation: card-out 0.25s ease-in both;
+}
+@keyframes card-out {
+  to { opacity: 0; transform: scale(0.85) translateY(-6px); }
+}
+.card-move { transition: transform 0.35s ease; }
+.table tbody { position: relative; }
 </style>

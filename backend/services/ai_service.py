@@ -99,8 +99,43 @@ def _mock_weekly_report(user_info, weekly_stats, weight_records):
     return {'ai_comment': comment, 'suggest': suggest, 'score': 75}
 
 
+def _salvage_json(text):
+    """挽救被截断/不完整的 JSON：清理尾逗号并补齐未闭合括号。"""
+    s = text.strip()
+    s = re.sub(r',(\s*[}\]])', r'\1', s)  # 去掉闭合符前的尾逗号
+    s = s.rstrip()
+    while s.endswith(','):
+        s = s[:-1].rstrip()
+    # 栈里只存开放括号；遇到任意闭合就 pop（不要求严格匹配），保证闭合顺序正确
+    stack = []
+    in_str = False
+    esc = False
+    for ch in s:
+        if esc:
+            esc = False
+            continue
+        if ch == '\\':
+            esc = True
+            continue
+        if ch == '"':
+            in_str = not in_str
+            continue
+        if in_str:
+            continue
+        if ch in ('{', '['):
+            stack.append(ch)
+        elif ch in ('}', ']'):
+            if stack:
+                stack.pop()
+    s = s + ''.join('}' if c == '{' else ']' for c in reversed(stack))  # 补齐未闭合括号
+    try:
+        return json.loads(s)
+    except json.JSONDecodeError:
+        return None
+
+
 def _repair_json_text(text):
-    """补全 AI 返回的未加引号 JSON 键/值。"""
+    """尽量把 AI 返回的（可能带字面转义/未加引号/被截断的）文本还原成合法 JSON。"""
     cleaned = text.strip()
     if cleaned.startswith('```json'):
         cleaned = cleaned[7:]
@@ -110,19 +145,30 @@ def _repair_json_text(text):
         cleaned = cleaned[:-3]
     cleaned = cleaned.strip()
 
+    # 1) 先按标准 JSON 解析（能正确处理字符串内的合法转义）
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
         pass
 
-    repaired = re.sub(r'([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', cleaned)  # 补全未加引号的键
-    # 补全未加引号的字符串值（中文/字母标识符）
-    repaired = re.sub(r':\s*([a-zA-Z_][a-zA-Z0-9_]*|[\u4e00-\u9fa5]+)\s*(?=[,}\]])', r': "\1"', repaired)
+    # 2) 还原字面转义序列：AI 偶尔把 \n \t \r 当成真实换行/缩进输出（而非 JSON 转义）
+    #    真实换行/制表符是合法 JSON 空白，可被正常解析
+    normalized = cleaned.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r')
+    try:
+        return json.loads(normalized)
+    except json.JSONDecodeError:
+        pass
 
+    # 3) 兜底：补全未加引号的键/值
+    repaired = re.sub(r'([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', normalized)
+    repaired = re.sub(r':\s*([a-zA-Z_][a-zA-Z0-9_]*|[\u4e00-\u9fa5]+)\s*(?=[,}\]])', r': "\1"', repaired)
     try:
         return json.loads(repaired)
     except json.JSONDecodeError:
-        return None
+        pass
+
+    # 4) 最后手段：挽救被截断的 JSON（补齐未闭合括号）
+    return _salvage_json(cleaned)
 
 
 def generate_diet_plan(user_info, diseases=None):
@@ -172,46 +218,50 @@ def generate_diet_plan(user_info, diseases=None):
     if client is None:
         current_app.logger.warning('AI_API_KEY 未配置，使用演示方案兜底')
         return _mock_diet_plan(user_info)
-    try:
-        response = client.chat.completions.create(
-            model=current_app.config.get('AI_MODEL', 'deepseek-chat'),
-            messages=[
-                {'role': 'system', 'content': prompt},
-                {'role': 'user', 'content': '请为我生成一份适合的饮食方案。'},
-            ],
-            temperature=0.7,
-            max_tokens=4096,
-        )
-        content = response.choices[0].message.content
+    plan_data = None
+    last_err = None
+    for attempt in range(3):  # 最多重试 3 次，应对偶发截断/格式异常
+        try:
+            response = client.chat.completions.create(
+                model=current_app.config.get('AI_MODEL', 'deepseek-chat'),
+                messages=[
+                    {'role': 'system', 'content': prompt},
+                    {'role': 'user', 'content': '请为我生成一份适合的饮食方案。'},
+                ],
+                temperature=0.7,
+                max_tokens=4096,
+            )
+            content = response.choices[0].message.content
 
-        json_match = re.search(r'```json\s*([\s\S]*?)\s*```', content)
-        raw_json = json_match.group(1).strip() if json_match else content.strip()
+            json_match = re.search(r'```json\s*([\s\S]*?)\s*```', content)
+            raw_json = json_match.group(1).strip() if json_match else content.strip()
 
-        # 修复可能的不合法 JSON
-        plan_data = _repair_json_text(raw_json)
-        if plan_data is None:
-            # 仍然无法解析：返回原始文本，不保存脏数据
-            return {
-                'plan_content': content,
-                'plan_data': {'raw_text': content},
-                'total_cal': None,
-            }
+            # 尽力修复 / 挽救可能的不合法或被截断 JSON
+            plan_data = _repair_json_text(raw_json)
+            if plan_data is not None:
+                break
+            last_err = 'AI 返回内容无法解析为 JSON'
+        except Exception as e:
+            last_err = str(e)
+            current_app.logger.warning(f'AI方案第{attempt + 1}次生成失败: {str(e)}')
 
-        # 确保 total_cal 存在（AI 可能漏掉）
-        if isinstance(plan_data, dict) and not plan_data.get('total_cal'):
-            plan_data['total_cal'] = user_info.get('recommend_cal', 1800)
-
-        # 保存标准 JSON，避免前端解析失败
-        plan_content = json.dumps(plan_data, ensure_ascii=False)
-
-        return {
-            'plan_content': plan_content,
-            'plan_data': plan_data,
-            'total_cal': plan_data.get('total_cal'),
-        }
-    except Exception as e:
-        current_app.logger.error(f'AI方案生成失败，使用演示方案兜底: {str(e)}')
+    if plan_data is None:
+        # 多次重试仍失败：返回演示方案兜底，绝不把脏数据写库
+        current_app.logger.error(f'AI方案生成多次失败: {last_err}')
         return _mock_diet_plan(user_info)
+
+    # 确保 total_cal 存在（AI 可能漏掉）
+    if isinstance(plan_data, dict) and not plan_data.get('total_cal'):
+        plan_data['total_cal'] = user_info.get('recommend_cal', 1800)
+
+    # 保存标准 JSON，避免前端解析失败
+    plan_content = json.dumps(plan_data, ensure_ascii=False)
+
+    return {
+        'plan_content': plan_content,
+        'plan_data': plan_data,
+        'total_cal': plan_data.get('total_cal'),
+    }
 
 
 def generate_weekly_report(user_info, weekly_stats, weight_records, diseases=None):

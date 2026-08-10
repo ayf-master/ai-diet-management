@@ -115,7 +115,10 @@
           <div v-if="planData.totalCal" class="plan-total">全天总计：{{ planData.totalCal }}kcal</div>
           <div v-if="planData.tips" class="plan-tips">{{ planData.tips }}</div>
         </div>
-        <div v-else class="plan-content" v-html="renderContent(showPlan.plan_content)"></div>
+        <div v-else class="plan-content">
+          <p class="plan-warn">⚠️ 该方案内容格式异常，无法美化展示，建议删除后重新生成一份。</p>
+          <pre class="plan-raw">{{ showPlan.plan_content }}</pre>
+        </div>
         <div class="modal-actions">
           <button class="btn btn-outline btn-sm" @click="removePlan(showPlan, true)">删除</button>
           <button class="btn btn-primary btn-sm" @click="showPlan = null">关闭</button>
@@ -217,15 +220,6 @@ function toDish(item) {
   return { name: '菜品', foods: [] }
 }
 
-function renderContent(text) {
-  if (!text) return ''
-  return text
-    .replace(/```(\w+)?\n?/g, '')
-    .replace(/```/g, '')
-    .replace(/\n/g, '<br>')
-    .replace(/- (.*?)(<br>|$)/g, '&bull; $1<br>')
-}
-
 async function loadHistory() {
   const [p, r] = await Promise.all([
     api.getPlans(user.user_id),
@@ -290,6 +284,13 @@ onMounted(loadHistory)
 .plan-content {
   font-size: 14px; line-height: 1.8; margin-top: 8px;
   padding: 14px; background: var(--bg); border-radius: var(--radius-sm);
+}
+.plan-warn { color: var(--danger); font-size: 13px; margin: 0 0 10px; }
+.plan-raw {
+  margin: 0; padding: 12px; background: #fff; border-radius: var(--radius-sm);
+  font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+  max-height: 320px; overflow: auto; color: var(--text-light);
+  border: 1px solid var(--border-light);
 }
 .history-item {
   display: flex; justify-content: space-between; align-items: center;

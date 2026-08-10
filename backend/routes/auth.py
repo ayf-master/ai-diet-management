@@ -90,7 +90,9 @@ def update_user_zones():
 
     if user.goals:
         latest = max(g.created_at for g in user.goals)
-        days_since = (datetime.utcnow() - latest).days
+        # created_at 由 MySQL NOW()/db.func.now() 生成，使用服务器本地时间；
+        # 故比较时也应使用本地时间，避免 UTC 与本地时区差导致负数天数。
+        days_since = (datetime.now() - latest).days
         if days_since < 30:
             return jsonify({
                 'code': 429,
@@ -150,6 +152,31 @@ def upload_avatar():
     db.session.commit()
 
     return jsonify({'code': 200, 'msg': '头像上传成功', 'data': {'avatar_url': avatar_url}})
+
+
+@api.route('/user/avatar', methods=['DELETE'])
+def remove_avatar():
+    user_id = request.args.get('user_id', type=int)
+    if not user_id:
+        return jsonify({'code': 400, 'msg': '缺少user_id'}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'code': 404, 'msg': '用户不存在'}), 404
+
+    # 删除磁盘上的旧头像文件
+    if user.avatar_url:
+        old_name = user.avatar_url.rsplit('/', 1)[-1]
+        old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], old_name)
+        try:
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        except Exception:
+            pass
+        user.avatar_url = ''
+        db.session.commit()
+
+    return jsonify({'code': 200, 'msg': '头像已移除', 'data': {'avatar_url': ''}})
 
 
 @api.route('/login', methods=['POST'])

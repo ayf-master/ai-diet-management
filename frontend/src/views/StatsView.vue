@@ -29,6 +29,11 @@
       </div>
     </div>
 
+    <div class="chart-card card">
+      <h3>周热量趋势</h3>
+      <div class="chart-wrap"><canvas ref="weeklyChart"></canvas></div>
+    </div>
+
     <div class="weight-form card">
       <h3>记录新体重</h3>
       <div class="weight-inputs">
@@ -36,11 +41,6 @@
         <button class="btn btn-primary btn-sm" @click="recordWeight">记录</button>
       </div>
       <p v-if="weightMsg" class="success-msg">{{ weightMsg }}</p>
-    </div>
-
-    <div class="chart-card card">
-      <h3>周热量趋势</h3>
-      <div class="chart-wrap"><canvas ref="weeklyChart"></canvas></div>
     </div>
 
     <div class="chart-card card">

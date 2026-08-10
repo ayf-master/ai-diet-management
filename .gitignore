@@ -37,3 +37,12 @@ nul
 /*.pptx
 /*.md
 /*.png
+
+# 演示视频（交付物，非源码）
+*.mp4
+
+# 用户头像（运行/演示数据，非源码）
+backend/static/avatars/
+
+# git 改写历史的临时目录（filter-branch 残留）
+.git-rewrite/

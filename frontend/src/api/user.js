@@ -10,6 +10,10 @@ export function uploadAvatar(userId, file) {
   return postForm('/user/avatar', formData)
 }
 
+export function removeAvatar(userId) {
+  return del(`/user/avatar?user_id=${userId}`)
+}
+
 export function getDiseases() { return get('/diseases') }
 export function getUserDiseases(userId) { return get(`/user/diseases?user_id=${userId}`) }
 export function addUserDisease(data) { return post('/user/diseases', data) }
