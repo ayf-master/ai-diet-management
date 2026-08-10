@@ -164,14 +164,18 @@ async function saveFood() {
   saving.value = true
   try {
     const data = { ...form.value, user_id: user.user_id }
-    if (editingFood.value?.food_id) {
-      await api.updateFood(editingFood.value.food_id, data)
-    } else {
-      await api.createFood(data)
+    const res = editingFood.value?.food_id
+      ? await api.updateFood(editingFood.value.food_id, data)
+      : await api.createFood(data)
+    if (res.code !== 200) {
+      alert(res.msg || '保存失败')
+      return
     }
     showForm.value = false
     loadFoods()
-  } catch (e) {}
+  } catch (e) {
+    alert(e?.message || '网络错误')
+  }
   finally { saving.value = false }
 }
 

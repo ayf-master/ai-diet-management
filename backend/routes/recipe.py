@@ -1,12 +1,23 @@
 from flask import request, jsonify
 from app import db
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from models import Recipe, RecipeFood, Food, CookingMethod, UserCookingPref
 from services.health_check import evaluate_recipe, load_user_disease_rules
 from . import api
 
 OIL_KCAL_PER_G = 9.0    # kcal/g
 SAUCE_KCAL_PER_G = 4.0  # kcal/g
+
+
+def _dup_recipe(name, user_id, exclude_id=None):
+    """判断同名食谱是否已存在。作用域 = 该用户可见集合（系统食谱 + 本人自建）；
+    系统食谱(user_id 空)则全局查重，避免任何用户看到重复。"""
+    q = Recipe.query.filter(func.lower(func.trim(Recipe.recipe_name)) == (name or '').strip().lower())
+    if user_id:
+        q = q.filter(or_(Recipe.user_id.is_(None), Recipe.user_id == user_id))
+    if exclude_id is not None:
+        q = q.filter(Recipe.recipe_id != exclude_id)
+    return q.first()
 
 
 def _added_from_grams(oil_g, sauce_g):
@@ -109,6 +120,10 @@ def create_recipe():
     if not data or not data.get('recipe_name'):
         return jsonify({'code': 400, 'msg': '食谱名称不能为空'}), 400
 
+    name = (data['recipe_name'] or '').strip()
+    if _dup_recipe(name, data.get('user_id')):
+        return jsonify({'code': 409, 'msg': f'食谱「{name}」已存在，请勿重复添加'}), 409
+
     recipe = Recipe(
         admin_id=data.get('admin_id'),
         user_id=data.get('user_id'),
@@ -162,6 +177,10 @@ def update_recipe(recipe_id):
     data = request.get_json()
     if not data:
         return jsonify({'code': 400, 'msg': '请求数据为空'}), 400
+
+    new_name = (data.get('recipe_name') or recipe.recipe_name or '').strip()
+    if _dup_recipe(new_name, recipe.user_id, exclude_id=recipe_id):
+        return jsonify({'code': 409, 'msg': f'食谱「{new_name}」已存在，无法改名成重复名称'}), 409
 
     for field in ('recipe_name', 'type', 'suitable_goals', 'intro', 'cook_method', 'forbid_tips', 'oil_g', 'sauce_g'):
         if field in data:

@@ -173,14 +173,18 @@ async function saveRecipe() {
       ...form.value,
       admin_id: adminUser.admin_id || 1,
     }
-    if (editingRecipe.value?.recipe_id) {
-      await api.updateRecipe(editingRecipe.value.recipe_id, data)
-    } else {
-      await api.createRecipe(data)
+    const res = editingRecipe.value?.recipe_id
+      ? await api.updateRecipe(editingRecipe.value.recipe_id, data)
+      : await api.createRecipe(data)
+    if (res.code !== 200) {
+      alert(res.msg || '保存失败')
+      return
     }
     showForm.value = false
     loadData()
-  } catch (e) {}
+  } catch (e) {
+    alert(e?.message || '网络错误')
+  }
   finally { saving.value = false }
 }
 

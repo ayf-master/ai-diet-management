@@ -1,8 +1,20 @@
 from flask import request, jsonify
+from sqlalchemy import func
 from app import db
 from models import Food, Nutrition, FoodCategory
 from services.health_check import evaluate_food, load_user_disease_rules
 from . import api
+
+
+def _dup_food(name, user_id, exclude_id=None):
+    """判断同名食材是否已存在。作用域 = 该用户可见集合（系统食材 + 本人自建）；
+    系统食材(user_id 空)则全局查重，避免任何用户看到重复。"""
+    q = Food.query.filter(func.lower(func.trim(Food.food_name)) == (name or '').strip().lower())
+    if user_id:
+        q = q.filter(db.or_(Food.user_id.is_(None), Food.user_id == user_id))
+    if exclude_id is not None:
+        q = q.filter(Food.food_id != exclude_id)
+    return q.first()
 
 
 @api.route('/foods', methods=['GET'])
@@ -44,6 +56,10 @@ def create_food():
     if not data or not data.get('food_name'):
         return jsonify({'code': 400, 'msg': '食材名称不能为空'}), 400
 
+    name = (data['food_name'] or '').strip()
+    if _dup_food(name, data.get('user_id')):
+        return jsonify({'code': 409, 'msg': f'食材「{name}」已存在，请勿重复添加'}), 409
+
     food = Food(
         food_name=data['food_name'],
         category_id=data.get('category_id', 1),
@@ -82,6 +98,10 @@ def update_food(food_id):
     data = request.get_json()
     if not data:
         return jsonify({'code': 400, 'msg': '请求数据为空'}), 400
+
+    new_name = (data.get('food_name') or food.food_name or '').strip()
+    if _dup_food(new_name, food.user_id, exclude_id=food_id):
+        return jsonify({'code': 409, 'msg': f'食材「{new_name}」已存在，无法改名成重复名称'}), 409
 
     for field in ('food_name', 'category_id', 'unit', 'img_path'):
         if field in data:

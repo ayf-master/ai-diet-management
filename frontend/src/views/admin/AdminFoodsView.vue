@@ -125,14 +125,18 @@ function openForm(f) {
 async function saveFood() {
   saving.value = true
   try {
-    if (editingFood.value?.food_id) {
-      await api.updateFood(editingFood.value.food_id, form.value)
-    } else {
-      await api.createFood(form.value)
+    const res = editingFood.value?.food_id
+      ? await api.updateFood(editingFood.value.food_id, form.value)
+      : await api.createFood(form.value)
+    if (res.code !== 200) {
+      alert(res.msg || '保存失败')
+      return
     }
     showForm.value = false
     loadFoods()
-  } catch (e) {}
+  } catch (e) {
+    alert(e?.message || '网络错误')
+  }
   finally { saving.value = false }
 }
 
