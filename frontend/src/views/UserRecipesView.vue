@@ -29,7 +29,9 @@
       <TransitionGroup name="card" tag="div" class="recipe-grid">
         <div v-for="(r, i) in recipes" :key="r.recipe_id" class="recipe-card"
              :style="{ '--i': i }" @click="showDetail(r)">
-        <div class="recipe-img" :style="imgStyle(r)"></div>
+        <div class="recipe-img" :style="imgStyle(r)">
+          <img :src="imgUrl(r)" :data-rid="r.recipe_id" :alt="r.recipe_name" loading="lazy" @error="onImgError">
+        </div>
         <div class="recipe-body">
           <div class="recipe-top">
             <div class="recipe-tags">
@@ -106,6 +108,7 @@
     <div v-if="detail" class="modal-overlay" @click.self="detail = null">
       <div class="modal-content detail-modal">
         <div class="modal-img" :style="imgStyle(detail)">
+          <img :src="imgUrl(detail)" :data-rid="detail.recipe_id" :alt="detail.recipe_name" loading="lazy" @error="onImgError">
           <span class="food-label">{{ detail.recipe_name }}</span>
         </div>
         <h2 class="modal-title">{{ detail.recipe_name }}</h2>
@@ -170,10 +173,39 @@ const foodTags = {
   '早餐': 'breakfast,chinese', '午餐': 'lunch,chinese',
   '晚餐': 'dinner,chinese', '加餐': 'snack,food',
 }
+const gradientPalette = [
+  'linear-gradient(135deg,#ff9a9e 0%,#fecfef 100%)',
+  'linear-gradient(135deg,#a18cd1 0%,#fbc2eb 100%)',
+  'linear-gradient(135deg,#84fab0 0%,#8fd3f4 100%)',
+  'linear-gradient(135deg,#e0c3fc 0%,#8ec5fc 100%)',
+  'linear-gradient(135deg,#fccb90 0%,#d57eeb 100%)',
+  'linear-gradient(135deg,#43e97b 0%,#38f9d7 100%)',
+  'linear-gradient(135deg,#ffecd2 0%,#fcb69f 100%)',
+  'linear-gradient(135deg,#667eea 0%,#764ba2 100%)',
+]
 
 function imgStyle(r) {
+  const idx = (r.recipe_id || 1) % gradientPalette.length
+  return { background: gradientPalette[idx] }
+}
+function imgUrl(r) {
+  if (r.img_path) {
+    const base = 'http://localhost:9876'
+    return base + (r.img_path.startsWith('/') ? r.img_path : '/' + r.img_path)
+  }
   const tags = foodTags[r.recipe_name] || foodTags[r.type] || 'food,chinese'
-  return { background: `url(https://loremflickr.com/400/200/${tags}?lock=${r.recipe_id||1}) center/cover no-repeat rgb(240,240,240)` }
+  return `https://loremflickr.com/400/200/${tags}?lock=${r.recipe_id || 1}`
+}
+function onImgError(e) {
+  const img = e.target
+  const tries = Number(img.dataset.tries || '0')
+  if (tries === 0) {
+    img.dataset.tries = '1'
+    const rid = img.dataset.rid || '1'
+    img.src = `https://picsum.photos/seed/recipe${rid}/400/200`
+  } else {
+    img.style.display = 'none'
+  }
 }
 function zoneKey(r) {
   const g = r.suitable_goals || ''
@@ -238,14 +270,18 @@ async function saveRecipe() {
   saving.value = true
   try {
     const data = { ...form.value, user_id: user.user_id }
-    if (editingRecipe.value?.recipe_id) {
-      await api.updateRecipe(editingRecipe.value.recipe_id, data)
-    } else {
-      await api.createRecipe(data)
+    const res = editingRecipe.value?.recipe_id
+      ? await api.updateRecipe(editingRecipe.value.recipe_id, data)
+      : await api.createRecipe(data)
+    if (res.code !== 200) {
+      alert(res.msg || '保存失败')
+      return
     }
     showForm.value = false
     loadRecipes()
-  } catch (e) {}
+  } catch (e) {
+    alert(e?.message || '网络错误')
+  }
   finally { saving.value = false }
 }
 
@@ -270,7 +306,11 @@ onMounted(() => {
   transition: box-shadow 0.2s, transform 0.2s;
 }
 .recipe-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.06); transform: translateY(-2px); }
-.recipe-img { height: 130px; }
+.recipe-img { position: relative; height: 130px; overflow: hidden; }
+.recipe-img img, .modal-img img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block;
+}
 .recipe-body { padding: 10px 14px; }
 .recipe-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .recipe-tags { display: flex; gap: 6px; align-items: center; }
@@ -322,10 +362,11 @@ onMounted(() => {
 
 /* 详情弹窗样式 */
 .detail-modal .modal-img {
-  height: 200px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-  margin-bottom: 16px; background-size: cover; background-position: center;
+  position: relative; height: 200px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px; overflow: hidden;
 }
 .detail-modal .food-label {
+  position: relative; z-index: 1;
   font-size: 14px; font-weight: 600; color: var(--text);
   background: rgba(255,255,255,0.55); padding: 2px 10px; border-radius: 6px;
 }
