@@ -101,8 +101,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import api from '../api/index.js'
+import { registerPullRefresh, unregisterPullRefresh } from '../composables/pullRefresh.js'
 
 const user = JSON.parse(sessionStorage.getItem('user') || '{}')
 
@@ -164,18 +165,14 @@ async function saveFood() {
   saving.value = true
   try {
     const data = { ...form.value, user_id: user.user_id }
-    const res = editingFood.value?.food_id
-      ? await api.updateFood(editingFood.value.food_id, data)
-      : await api.createFood(data)
-    if (res.code !== 200) {
-      alert(res.msg || '保存失败')
-      return
+    if (editingFood.value?.food_id) {
+      await api.updateFood(editingFood.value.food_id, data)
+    } else {
+      await api.createFood(data)
     }
     showForm.value = false
     loadFoods()
-  } catch (e) {
-    alert(e?.message || '网络错误')
-  }
+  } catch (e) {}
   finally { saving.value = false }
 }
 
@@ -185,7 +182,11 @@ async function delFood(f) {
   loadFoods()
 }
 
-onMounted(loadFoods)
+onMounted(() => {
+  loadFoods()
+  registerPullRefresh(loadFoods)
+})
+onBeforeUnmount(unregisterPullRefresh)
 </script>
 
 <style scoped>
@@ -231,6 +232,39 @@ onMounted(loadFoods)
 .table tbody { position: relative; }
 
 .form-group label { text-transform: none; letter-spacing: normal; }
+
+/* ── 移动端：宽表转为卡片列表，避免横向滚动 ── */
+@media (max-width: 768px) {
+  .table thead { display: none; }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; box-sizing: border-box; }
+  .table tr {
+    border: 1px solid var(--border); border-radius: 12px;
+    margin-bottom: 12px; padding: 10px 14px; background: #fff;
+  }
+  .table td {
+    border: none; padding: 7px 0;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    text-align: right; font-size: 14px;
+  }
+  .table td::before {
+    color: var(--text-light); font-size: 12px; font-weight: 600;
+    text-align: left; flex-shrink: 0;
+  }
+  .table td:nth-child(1) { justify-content: flex-start; font-size: 16px; font-weight: 600; padding-bottom: 4px; }
+  .table td:nth-child(1)::before { content: ""; }
+  .table td:nth-child(2)::before { content: "分类"; }
+  .table td:nth-child(3)::before { content: "热量/100g"; }
+  .table td:nth-child(4)::before { content: "蛋白质"; }
+  .table td:nth-child(5)::before { content: "脂肪"; }
+  .table td:nth-child(6)::before { content: "健康提示"; }
+  .table td:nth-child(7)::before { content: "来源"; }
+  .table td.row-actions {
+    justify-content: flex-end; padding-top: 8px;
+    border-top: 1px solid var(--border); margin-top: 4px;
+  }
+  .table td.row-actions::before { content: ""; }
+  /* 整行点击进入详情时，操作区需阻止冒泡（模板已 @click.stop） */
+}
 
 /* ── 健康警告标 ── */
 .hw-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; cursor: help; white-space: nowrap; }

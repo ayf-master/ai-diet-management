@@ -132,9 +132,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api/index.js'
+import { registerPullRefresh, unregisterPullRefresh } from '../composables/pullRefresh.js'
 
 const router = useRouter()
 const user = JSON.parse(sessionStorage.getItem('user') || '{}')
@@ -151,13 +152,13 @@ const avatarUrl = computed(() => {
 const userZones = user.diet_goals || [user.diet_goal || 'healthy']
 
 const recommend = user.recommend_cal || 0
+const currentWeight = user.current_weight
 const targetWeight = user.target_weight
-const currentWeight = computed(() => latestWeight.value ?? user.current_weight ?? 0)
 
 const todayCal = ref(0)
 const dailyMeals = ref([])
 const weeklyTotal = ref(0)
-const latestWeight = ref(user.current_weight)
+const latestWeight = ref(currentWeight)
 const weightHistory = ref([])
 const mealTypes = ref([])
 const hoverIdx = ref(-1)
@@ -181,13 +182,13 @@ const mealSegments = computed(() => {
 // 目标进度：以最早一条体重记录为起点（无记录则用当前体重）
 const startWeight = computed(() => {
   const arr = [...weightHistory.value].reverse()
-  return arr.length ? arr[0].weight : currentWeight.value
+  return arr.length ? arr[0].weight : currentWeight
 })
-const gap = computed(() => Math.max(+(currentWeight.value - targetWeight).toFixed(1), 0))
+const gap = computed(() => Math.max(+(currentWeight - targetWeight).toFixed(1), 0))
 const progress = computed(() => {
   const start = startWeight.value
   if (start <= targetWeight) return 100
-  const p = (start - currentWeight.value) / (start - targetWeight)
+  const p = (start - currentWeight) / (start - targetWeight)
   return Math.max(0, Math.min(100, Math.round(p * 100)))
 })
 
@@ -259,12 +260,16 @@ async function loadData() {
   todayCal.value = daily.data?.total_cal || 0
   dailyMeals.value = daily.data?.meals || []
   weeklyTotal.value = weekly.data?.total_cal || 0
-  latestWeight.value = lw.data?.weight ?? user.current_weight
+  latestWeight.value = lw.data?.weight ?? currentWeight
   weightHistory.value = wh.data || []
   mealTypes.value = mt.data || []
 }
 
-onMounted(loadData)
+onMounted(() => {
+  loadData()
+  registerPullRefresh(loadData)
+})
+onBeforeUnmount(unregisterPullRefresh)
 </script>
 
 <style scoped>

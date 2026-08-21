@@ -48,6 +48,11 @@ const routes = [
     component: () => import('../views/UserRecipesView.vue'),
   },
   {
+    path: '/me',
+    name: 'MobileMe',
+    component: () => import('../views/MobileMeView.vue'),
+  },
+  {
     path: '/admin/login',
     name: 'AdminLogin',
     component: () => import('../views/admin/AdminLoginView.vue'),

@@ -126,17 +126,46 @@ a:hover { color: #555; }
   margin-left: 2px;
 }
 
-/* 全局页面级渐入渐出：用户页面与管理员页面统一 */
-.page-enter-active,
-.page-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+/* ===== 移动端全局适配 ===== */
+:root {
+  --bottom-nav-h: 58px;
+  --top-bar-h: 52px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
-.page-enter-from {
-  opacity: 0;
-  transform: translateY(14px);
+
+* { -webkit-tap-highlight-color: transparent; }
+html, body { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; }
+img { max-width: 100%; }
+
+/* 移动端外壳：顶栏(固定) + 滚动区 + 底部导航(固定) 三段式，仅滚动区可滚动 */
+#app-root.mobile-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
-.page-leave-to {
-  opacity: 0;
-  transform: translateY(-14px);
+
+@media (max-width: 768px) {
+  /* 触摸目标放大，符合移动端单手操作习惯 */
+  .btn { min-height: 44px; padding: 10px 18px; font-size: 15px; }
+  .btn-sm { min-height: 36px; padding: 8px 14px; font-size: 13px; }
+  .input, select.input, textarea.input {
+    min-height: 44px; font-size: 16px; /* 16px 防止 iOS 聚焦时整页缩放 */
+  }
+  button, input, select, textarea { touch-action: manipulation; }
+
+  /* 列表筛选条：移动端纵向铺满 */
+  .filter-bar { flex-direction: column; align-items: stretch; }
+  .filter-bar .input, .filter-bar select, .filter-bar input { max-width: none !important; width: 100%; }
+
+  /* 滚动区在顶部细栏与底部导航之间滚动，留出安全区 */
+  .mobile-shell .pr {
+    padding-top: calc(var(--top-bar-h) + var(--safe-top));
+    padding-bottom: calc(var(--bottom-nav-h) + var(--safe-bottom));
+  }
+  .mobile-shell .page { padding: 12px 14px; }
 }
 
