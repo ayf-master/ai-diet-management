@@ -34,6 +34,19 @@ def load_user_disease_rules(user_id):
     return out
 
 
+def load_user_diseases(user_id):
+    """取用户疾病 ORM 对象，并把用户级备注注入，供 AI prompt 使用。"""
+    if not user_id:
+        return []
+    diseases = []
+    for ud in UserDisease.query.filter_by(user_id=user_id).all():
+        disease = db.session.get(Disease, ud.disease_id)
+        if disease:
+            disease.remark = ud.remark
+            diseases.append(disease)
+    return diseases
+
+
 def evaluate_nutrition(name, nutrition, diseases):
     """对一份「每100g营养」做判定，返回 {level, reasons:[...]}。"""
     if not diseases:
