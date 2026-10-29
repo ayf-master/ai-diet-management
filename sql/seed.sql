@@ -4,7 +4,7 @@ USE diet_management;
 
 -- 管理员（密码: 123456）
 INSERT INTO admin (account, password, nickname) VALUES
-('admin', 'e10adc3949ba59abbe56e057f20f883e', '系统管理员');
+('admin', 'scrypt:32768:8:1$9GRAEMp1vrkXDSzt$09e4b1fbc61d5867b8cbb70f93d8a07a4d67521c09f71d7e6f0720dd63e100c5704fd86eebd2ec1375070736cf6ed09760cfe84bd8f045733f97c6709fa574d8', '系统管理员');
 
 -- 食材
 INSERT INTO food (food_name, category_id, unit) VALUES
@@ -91,8 +91,8 @@ INSERT INTO disease (disease_name, forbid_desc, forbid_keywords, forbid_rules) V
 
 -- 用户（密码: 123456）
 INSERT INTO user (account, password, nickname, email, age, gender, height, current_weight, target_weight, activity_level, diet_goal, recommend_cal) VALUES
-('zhangsan', 'e10adc3949ba59abbe56e057f20f883e', '张三', 'zhangsan@example.com', 28, 1, 175, 80.0, 70.0, 2, 'lose_weight', 1800),
-('lisi', 'e10adc3949ba59abbe56e057f20f883e', '李四', 'lisi@example.com', 25, 0, 162, 60.0, 52.0, 1, 'healthy', 1400);
+('zhangsan', 'scrypt:32768:8:1$9GRAEMp1vrkXDSzt$09e4b1fbc61d5867b8cbb70f93d8a07a4d67521c09f71d7e6f0720dd63e100c5704fd86eebd2ec1375070736cf6ed09760cfe84bd8f045733f97c6709fa574d8', '张三', 'zhangsan@example.com', 28, 1, 175, 80.0, 70.0, 2, 'lose_weight', 1800),
+('lisi', 'scrypt:32768:8:1$9GRAEMp1vrkXDSzt$09e4b1fbc61d5867b8cbb70f93d8a07a4d67521c09f71d7e6f0720dd63e100c5704fd86eebd2ec1375070736cf6ed09760cfe84bd8f045733f97c6709fa574d8', '李四', 'lisi@example.com', 25, 0, 162, 60.0, 52.0, 1, 'healthy', 1400);
 
 CALL sp_recommend_daily_cal(1);
 CALL sp_recommend_daily_cal(2);

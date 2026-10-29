@@ -81,8 +81,10 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const user = sessionStorage.getItem('user')
   const admin = sessionStorage.getItem('admin')
+  const token = sessionStorage.getItem('token')
   const publicPages = ['Login', 'AdminLogin', 'ForgotPassword']
-  if (!publicPages.includes(to.name) && !user && !admin) {
+  // 没有 token 的旧会话一律回登录页，避免带着过期登录态一直报 401
+  if (!publicPages.includes(to.name) && (!token || (!user && !admin))) {
     next('/login')
   } else {
     next()

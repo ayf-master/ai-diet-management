@@ -46,6 +46,7 @@ async function handleLogin() {
     const res = await api.adminLogin(account.value, password.value)
     if (res.code === 200) {
       sessionStorage.setItem('admin', JSON.stringify(res.data))
+      sessionStorage.setItem('token', res.access_token || '')
       router.push('/admin/foods')
     } else { error.value = res.msg }
   } catch (e) { error.value = '网络错误' }

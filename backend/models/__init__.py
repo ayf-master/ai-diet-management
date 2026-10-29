@@ -16,5 +16,6 @@ from .user_disease import UserDisease
 from .weight_record import WeightRecord
 from .user_goal import UserGoal
 from .ai_diet_plan import AiDietPlan
+from .ai_plan_run import AiPlanRun
 from .ai_report import AiReport
 from .verification_code import VerificationCode

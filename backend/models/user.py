@@ -1,5 +1,5 @@
 from app import db
-from sqlalchemy import FetchedValue
+from sqlalchemy import Computed
 
 
 class User(db.Model):
@@ -21,7 +21,11 @@ class User(db.Model):
     custom_target_cal = db.Column(db.Integer)
     recommend_cal = db.Column(db.Integer, nullable=False)
     bmr = db.Column(db.Float)
-    bmi = db.Column(db.Float, FetchedValue())
+    # 数据库生成列：体重/身高变化时自动更新，应用层不需要写 bmi
+    bmi = db.Column(
+        db.Float,
+        Computed('ROUND(current_weight / POW(height / 100, 2), 1)', persisted=True),
+    )
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 

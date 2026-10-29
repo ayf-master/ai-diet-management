@@ -3,6 +3,14 @@ from sqlalchemy import func
 from app import db
 from models import Food, Nutrition, FoodCategory
 from services.health_check import evaluate_food, load_user_disease_rules
+from utils.auth import (
+    auth_required,
+    current_user_id,
+    ensure_owner,
+    ensure_self,
+    is_admin,
+    visible,
+)
 from . import api
 
 
@@ -18,14 +26,22 @@ def _dup_food(name, user_id, exclude_id=None):
 
 
 @api.route('/foods', methods=['GET'])
+@auth_required
 def list_foods():
     category_id = request.args.get('category_id', type=int)
     keyword = request.args.get('keyword', '')
     user_id = request.args.get('user_id', type=int)
 
-    query = Food.query
     if user_id:
-        query = query.filter(db.or_(Food.user_id.is_(None), Food.user_id == user_id))
+        err = ensure_self(user_id)
+        if err:
+            return err
+
+    query = Food.query
+    if not is_admin():
+        # 普通用户只能看到系统食材 + 自己创建的食材
+        uid = current_user_id()
+        query = query.filter(db.or_(Food.user_id.is_(None), Food.user_id == uid))
     if category_id:
         query = query.filter_by(category_id=category_id)
     if keyword:
@@ -43,21 +59,31 @@ def list_foods():
 
 
 @api.route('/foods/<int:food_id>', methods=['GET'])
+@auth_required
 def get_food(food_id):
     food = Food.query.get(food_id)
-    if not food:
+    if not food or not visible(food):
         return jsonify({'code': 404, 'msg': '食材不存在'}), 404
     return jsonify({'code': 200, 'data': food.to_dict()})
 
 
 @api.route('/foods', methods=['POST'])
+@auth_required
 def create_food():
     data = request.get_json()
     if not data or not data.get('food_name'):
         return jsonify({'code': 400, 'msg': '食材名称不能为空'}), 400
 
+    owner_id = data.get('user_id')
+    if owner_id is not None:
+        err = ensure_self(owner_id)
+        if err:
+            return err
+    elif not is_admin():
+        return jsonify({'code': 403, 'msg': '只有管理员能创建系统食材'}), 403
+
     name = (data['food_name'] or '').strip()
-    if _dup_food(name, data.get('user_id')):
+    if _dup_food(name, owner_id):
         return jsonify({'code': 409, 'msg': f'食材「{name}」已存在，请勿重复添加'}), 409
 
     food = Food(
@@ -65,7 +91,7 @@ def create_food():
         category_id=data.get('category_id', 1),
         unit=data.get('unit', '100g'),
         img_path=data.get('img_path'),
-        user_id=data.get('user_id'),
+        user_id=owner_id,
     )
     db.session.add(food)
     db.session.flush()  # 获取 food_id
@@ -90,10 +116,14 @@ def create_food():
 
 
 @api.route('/foods/<int:food_id>', methods=['PUT'])
+@auth_required
 def update_food(food_id):
     food = Food.query.get(food_id)
     if not food:
         return jsonify({'code': 404, 'msg': '食材不存在'}), 404
+    err = ensure_owner(food)
+    if err:
+        return err
 
     data = request.get_json()
     if not data:
@@ -123,10 +153,14 @@ def update_food(food_id):
 
 
 @api.route('/foods/<int:food_id>', methods=['DELETE'])
+@auth_required
 def delete_food(food_id):
     food = Food.query.get(food_id)
     if not food:
         return jsonify({'code': 404, 'msg': '食材不存在'}), 404
+    err = ensure_owner(food)
+    if err:
+        return err
 
     try:
         if food.nutrition:
@@ -140,6 +174,7 @@ def delete_food(food_id):
 
 
 @api.route('/food-categories', methods=['GET'])
+@auth_required
 def list_categories():
     categories = FoodCategory.query.order_by(FoodCategory.sort_order).all()
     return jsonify({'code': 200, 'data': [c.to_dict() for c in categories]})

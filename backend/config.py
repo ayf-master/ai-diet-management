@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -7,6 +8,12 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 class Config:
+    # 会话与 JWT（生产环境必须在 .env 里覆盖 SECRET_KEY）
+    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-change-in-production-32bytes!')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', SECRET_KEY)
+    JWT_TOKEN_LOCATION = ['headers']
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=12)
+
     # 数据库
     DB_USER = os.getenv('DB_USER', 'root')
     DB_PASSWORD = os.getenv('DB_PASSWORD', '')

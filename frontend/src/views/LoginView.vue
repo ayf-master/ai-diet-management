@@ -125,6 +125,7 @@ async function handleSubmit() {
       const res = await api.login(form.account, form.password)
       if (res.code === 200) {
         sessionStorage.setItem('user', JSON.stringify(res.data))
+        sessionStorage.setItem('token', res.access_token || '')
         router.push('/dashboard')
       } else { error.value = res.msg }
     } else {
@@ -136,6 +137,7 @@ async function handleSubmit() {
       const res = await api.register({ ...form, diet_goals: form.diet_goals })
       if (res.code === 200) {
         sessionStorage.setItem('user', JSON.stringify(res.data))
+        sessionStorage.setItem('token', res.access_token || '')
         router.push('/dashboard')
       } else { error.value = res.msg }
     }
