@@ -1,5 +1,6 @@
 -- Docker 初始化专用：给视图脚本补上库选择（独立执行时需要）
 USE diet_management;
+SET NAMES utf8mb4;
 
 CREATE OR REPLACE VIEW v_recipe_nutrition AS
 SELECT
