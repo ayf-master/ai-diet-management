@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:9876/api'
+// 相对路径：本地由 vite 代理，生产由 nginx 反向代理到 Spring Boot
+const API_BASE = '/api'
 
 // 登录后 token 存在 sessionStorage，所有请求自动带上
 function authHeader() {

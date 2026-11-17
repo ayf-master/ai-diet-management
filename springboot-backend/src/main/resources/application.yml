@@ -13,10 +13,10 @@ spring:
 app:
   # 生产环境通过环境变量覆盖
   jwt-secret: ${JWT_SECRET_KEY:dev-secret-change-in-production-32bytes!}
-  upload-folder: ${UPLOAD_FOLDER:../backend/static/avatars}
+  upload-folder: ${UPLOAD_FOLDER:/app/avatars}
   # Spring -> Python AI 服务的内部调用配置
   ai:
-    base-url: ${AI_SERVICE_URL:http://127.0.0.1:9877}
+    base-url: ${AI_SERVICE_URL:http://ai-service:9877}
     internal-token: ${INTERNAL_TOKEN:internal-dev-token-change-me}
     connect-timeout-ms: 5000
     read-timeout-ms: 120000

@@ -1,12 +1,13 @@
-# AI 独立服务配置：从 backend/.env 读取共享密钥，本服务不单独存密钥
+# AI 独立服务配置：容器内走环境变量，本地开发兼容 .env 文件
 import os
 
 from dotenv import load_dotenv
 
+# 本地开发仍可放 .env；容器里该文件不存在，完全依赖环境变量注入
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# 优先读 ai-service/.env（可覆盖），再读 backend/.env（DB 与 AI 密钥共享源）
-load_dotenv(os.path.join(_BASE_DIR, '.env'))
-load_dotenv(os.path.join(_BASE_DIR, '..', 'backend', '.env'))
+_env_file = os.path.join(_BASE_DIR, '.env')
+if os.path.exists(_env_file):
+    load_dotenv(_env_file)
 
 DB_USER = os.getenv('DB_USER', 'root')
 DB_PASSWORD = os.getenv('DB_PASSWORD', '')
@@ -29,4 +30,5 @@ AI_MODEL = os.getenv('AI_MODEL', 'deepseek-chat')
 INTERNAL_TOKEN = os.getenv('INTERNAL_TOKEN', 'internal-dev-token-change-me')
 
 PORT = int(os.getenv('AI_SERVICE_PORT', '9877'))
-HOST = os.getenv('AI_SERVICE_HOST', '127.0.0.1')
+# 容器内必须监听 0.0.0.0，否则 Spring 容器无法通过服务名访问
+HOST = os.getenv('AI_SERVICE_HOST', '0.0.0.0')

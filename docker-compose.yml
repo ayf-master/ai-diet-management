@@ -1,0 +1,102 @@
+services:
+  mysql:
+    image: mysql:8.0.31
+    container_name: diet-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: diet_management
+      TZ: Asia/Shanghai
+    # 不映射宿主机 3306（已由 quickmark-db 占用），仅 compose 内部互访
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=100
+      - --performance-schema=OFF
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - diet-net
+
+  ai-service:
+    build: ./ai-service
+    container_name: diet-ai
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: diet_management
+      AI_API_KEY: ${AI_API_KEY}
+      AI_API_URL: ${AI_API_URL:-https://api.deepseek.com/v1}
+      AI_MODEL: ${AI_MODEL:-deepseek-chat}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      AI_SERVICE_HOST: 0.0.0.0
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_healthy
+    expose:
+      - "9877"
+    networks:
+      - diet-net
+
+  spring-app:
+    build: ./springboot-backend
+    container_name: diet-spring
+    restart: unless-stopped
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: diet_management
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      UPLOAD_FOLDER: /app/avatars
+      AI_SERVICE_URL: http://ai-service:9877
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_SENDER: ${SMTP_SENDER:-}
+      TZ: Asia/Shanghai
+    volumes:
+      - avatar-data:/app/avatars
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+    expose:
+      - "9876"
+    networks:
+      - diet-net
+
+  nginx:
+    build: ./frontend
+    container_name: diet-nginx
+    restart: unless-stopped
+    # 80/8080/3000 均被占用，用 8081 对外
+    ports:
+      - "8081:80"
+    depends_on:
+      - spring-app
+    networks:
+      - diet-net
+
+volumes:
+  mysql-data:
+  avatar-data:
+
+networks:
+  diet-net:
+    driver: bridge
