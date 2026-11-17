@@ -4,7 +4,7 @@
     <header class="site-header" :class="{ scrolled: isScrolled, 'nav-open': menuOpen }">
       <div class="header-inner">
         <router-link to="/" class="brand">
-          <span class="brand-mark">食</span>
+          <span class="brand-mark" v-html="brandIcon"></span>
           <span class="brand-name">食律</span>
         </router-link>
 
@@ -15,13 +15,13 @@
           <a href="#how" @click="closeMenu">如何使用</a>
           <div class="nav-actions-mobile">
             <router-link to="/login" class="btn btn-ghost" @click="closeMenu">登录</router-link>
-            <router-link to="/login?mode=register" class="btn btn-dark" @click="closeMenu">免费开始</router-link>
+            <router-link to="/login?mode=register" class="btn btn-dark" @click="closeMenu">注册</router-link>
           </div>
         </nav>
 
         <div class="nav-actions">
           <router-link to="/login" class="btn btn-ghost">登录</router-link>
-          <router-link to="/login?mode=register" class="btn btn-dark btn-cta">免费开始 <span class="arrow">→</span></router-link>
+          <router-link to="/login?mode=register" class="btn btn-dark btn-cta">注册 <span class="arrow">→</span></router-link>
         </div>
 
         <button class="menu-toggle" @click="menuOpen = !menuOpen" :aria-expanded="menuOpen" aria-label="菜单">
@@ -46,7 +46,7 @@
             不用再靠意志力硬扛，把健康变成一种轻松的日常。
           </p>
           <div class="hero-actions">
-            <router-link to="/login?mode=register" class="btn btn-dark btn-lg">免费开始使用 <span class="arrow">→</span></router-link>
+            <router-link to="/login?mode=register" class="btn btn-dark btn-lg">立即注册 <span class="arrow">→</span></router-link>
             <a href="#features" class="btn btn-outline btn-lg">了解功能</a>
           </div>
           <div class="hero-trust">
@@ -227,7 +227,7 @@
         <h2>从今天起，好好吃饭。</h2>
         <p>几分钟建立你的专属饮食档案，让改变从一个决定开始。</p>
         <div class="cta-actions">
-          <router-link to="/login?mode=register" class="btn btn-light btn-lg">免费注册 <span class="arrow">→</span></router-link>
+          <router-link to="/login?mode=register" class="btn btn-light btn-lg">立即注册 <span class="arrow">→</span></router-link>
           <router-link to="/login" class="btn btn-outline-light btn-lg">已有账号，登录</router-link>
         </div>
       </div>
@@ -237,7 +237,7 @@
     <footer class="site-footer">
       <div class="footer-inner">
         <div class="footer-brand">
-          <span class="brand-mark">食</span>
+          <span class="brand-mark" v-html="brandIcon"></span>
           <div><strong>食律</strong><p>一切为了你的健康</p></div>
         </div>
         <p class="footer-copy">AI 辅助减脂饮食管理系统 · 用科学和数据，让健康成为一种习惯</p>
@@ -249,6 +249,8 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+
+const brandIcon = '<svg viewBox="0 0 64 64" width="22" height="22" fill="none"><path d="M20 18h24M24 18v10M32 18v10M40 18v10M20 28h24" stroke="#2ECC71" stroke-width="3.5" stroke-linecap="round"/><path d="M22 28c0 9 4.5 14 10 14s10-5 10-14" stroke="#2ECC71" stroke-width="3.5" stroke-linecap="round"/><path d="M32 42v5M27 47h10" stroke="#2ECC71" stroke-width="3.5" stroke-linecap="round"/><circle cx="45" cy="19" r="3.5" fill="#2ECC71"/></svg>'
 
 const rootRef = ref(null)
 const heroReady = ref(false)
