@@ -43,6 +43,11 @@
         <span class="me-item__label">AI 饮食方案</span>
         <span class="me-item__arrow">›</span>
       </div>
+      <div class="me-item" @click="go('/assistant')">
+        <span class="me-item__icon" style="background:rgba(52,152,219,0.12);color:#2D6DA3">◈</span>
+        <span class="me-item__label">AI 饮食助手</span>
+        <span class="me-item__arrow">›</span>
+      </div>
       <div class="me-item" @click="go('/settings')">
         <span class="me-item__icon" style="background:rgba(17,17,17,0.08);color:#111">⚙</span>
         <span class="me-item__label">账号设置</span>

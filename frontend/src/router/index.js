@@ -33,6 +33,11 @@ const routes = [
     component: () => import('../views/AiPlanView.vue'),
   },
   {
+    path: '/assistant',
+    name: 'Assistant',
+    component: () => import('../views/AssistantView.vue'),
+  },
+  {
     path: '/settings',
     name: 'Settings',
     component: () => import('../views/SettingsView.vue'),

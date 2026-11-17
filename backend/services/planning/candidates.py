@@ -64,35 +64,42 @@ def _health_map(recipe_ids, disease_rules):
     }
 
 
+def recall_meal_candidates(user, meal_key, disease_rules=None, goal=None, limit=8):
+    """召回单个餐次的候选；工具层也复用这一函数，避免两套 SQL。"""
+    if meal_key not in MEAL_LABELS:
+        return []
+    target_total = float(user.recommend_cal or 1800)
+    target_cal = target_total * MEAL_RATIOS[meal_key]
+    goal_pattern = f"%{goal or user.diet_goal or 'healthy'}%"
+    rows = db.session.execute(
+        text(_CANDIDATE_SQL),
+        {
+            'user_id': user.user_id,
+            'meal_type': MEAL_LABELS[meal_key],
+            'goal_pattern': goal_pattern,
+            'target_cal': target_cal,
+            'limit': limit,
+        },
+    ).mappings().all()
+
+    health = _health_map([r['recipe_id'] for r in rows], disease_rules)
+    meal_candidates = []
+    for row in rows:
+        h = health.get(row['recipe_id'], {'level': 'ok', 'reasons': []})
+        if h.get('level') == 'danger':
+            continue
+        meal_candidates.append(_candidate_dict(row, h))
+    return meal_candidates
+
+
 def recall_candidates(user, disease_rules=None, per_meal=8):
     """按餐次召回路程：可见 + 目标匹配优先 + 热量接近该餐目标。"""
-    target_total = float(user.recommend_cal or 1800)
-    goal_pattern = f"%{user.diet_goal or 'healthy'}%"
-    candidates = {}
-
-    for meal_key, meal_label in MEAL_LABELS.items():
-        target_cal = target_total * MEAL_RATIOS[meal_key]
-        rows = db.session.execute(
-            text(_CANDIDATE_SQL),
-            {
-                'user_id': user.user_id,
-                'meal_type': meal_label,
-                'goal_pattern': goal_pattern,
-                'target_cal': target_cal,
-                'limit': per_meal,
-            },
-        ).mappings().all()
-
-        health = _health_map([r['recipe_id'] for r in rows], disease_rules)
-        meal_candidates = []
-        for row in rows:
-            h = health.get(row['recipe_id'], {'level': 'ok', 'reasons': []})
-            if h.get('level') == 'danger':
-                continue
-            meal_candidates.append(_candidate_dict(row, h))
-        candidates[meal_key] = meal_candidates
-
-    return candidates
+    return {
+        meal_key: recall_meal_candidates(
+            user, meal_key, disease_rules=disease_rules, limit=per_meal,
+        )
+        for meal_key in MEAL_LABELS
+    }
 
 
 def candidate_count(candidates):

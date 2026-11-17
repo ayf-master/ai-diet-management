@@ -6,3 +6,6 @@ export function generateReport(userId) { return post('/ai/report', { user_id: us
 export function getReports(userId) { return get(`/ai/report?user_id=${userId}`) }
 export function deletePlan(planId) { return del(`/ai/plan/${planId}`) }
 export function deleteReport(reportId) { return del(`/ai/report/${reportId}`) }
+export function assistantChat(message, userId) {
+  return post('/ai/assistant', { message, user_id: userId })
+}

@@ -4,6 +4,7 @@ from flask import request, jsonify
 from app import db
 from models import User, AiDietPlan, AiPlanRun, AiReport
 from services.ai_service import generate_weekly_report, format_taboo_prompt
+from services.agent.calling import run_single_turn
 from services.errors import DomainError
 from services.health_check import load_user_diseases
 from services.planning.pipeline import generate_trusted_plan
@@ -63,6 +64,36 @@ def create_ai_plan():
     data['verification'] = result.plan.get('verification')
     data['warnings'] = result.warnings
     return jsonify({'code': 200, 'msg': '方案生成成功', 'data': data}), 200
+
+
+@api.route('/ai/assistant', methods=['POST'])
+@auth_required
+def ai_assistant():
+    """单轮只读助手：正常执行一轮工具，失败时最多再修复一轮。"""
+    data = request.get_json(silent=True) or {}
+    user_id, err = resolve_user_id(data.get('user_id'))
+    if err:
+        return err
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'code': 404, 'msg': '用户不存在'}), 404
+
+    result = run_single_turn(user, data.get('message'))
+    if result.status == 'invalid_request':
+        http_status = 400
+    elif result.status == 'unavailable':
+        http_status = 503
+    elif result.status == 'model_error':
+        http_status = 502
+    else:
+        http_status = 200
+
+    return jsonify({
+        'code': http_status,
+        'msg': '回答生成成功' if result.ok else '回答生成失败',
+        'data': result.to_dict(),
+    }), http_status
 
 
 @api.route('/ai/plan', methods=['GET'])

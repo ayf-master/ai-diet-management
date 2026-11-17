@@ -10,6 +10,7 @@
         <router-link to="/meal" class="nav-link">打卡</router-link>
         <router-link to="/stats" class="nav-link">统计</router-link>
         <router-link to="/ai-plan" class="nav-link">AI分析</router-link>
+        <router-link to="/assistant" class="nav-link">AI助手</router-link>
         <router-link to="/settings" class="nav-link">设置</router-link>
       </div>
 
