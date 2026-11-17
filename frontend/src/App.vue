@@ -31,7 +31,7 @@ import { useDevice } from './composables/useDevice.js'
 const route = useRoute()
 const isMobile = useDevice()
 
-const showNav = computed(() => !['Login', 'AdminLogin', 'ForgotPassword'].includes(route.name))
+const showNav = computed(() => !['Landing', 'Login', 'AdminLogin', 'ForgotPassword'].includes(route.name))
 
 // 仅当用户（非管理员）登录时，移动端才启用底部 Tab 导航；
 // 管理员页在移动端沿用桌面顶部导航，避免重复导航层级。
