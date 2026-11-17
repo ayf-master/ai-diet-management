@@ -1,0 +1,22 @@
+server:
+  port: 9876
+
+spring:
+  application:
+    name: java-health-backend
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:diet_management}?charset=utf8mb4&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+app:
+  # 生产环境通过环境变量覆盖
+  jwt-secret: ${JWT_SECRET_KEY:dev-secret-change-in-production-32bytes!}
+  upload-folder: ${UPLOAD_FOLDER:../backend/static/avatars}
+  # Spring -> Python AI 服务的内部调用配置
+  ai:
+    base-url: ${AI_SERVICE_URL:http://127.0.0.1:9877}
+    internal-token: ${INTERNAL_TOKEN:internal-dev-token-change-me}
+    connect-timeout-ms: 5000
+    read-timeout-ms: 120000

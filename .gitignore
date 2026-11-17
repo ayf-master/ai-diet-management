@@ -14,6 +14,9 @@ vendor_test/
 # 前端构建产物
 frontend/dist/
 
+# Java 构建产物
+springboot-backend/target/
+
 # pytest
 .pytest_cache/
 
