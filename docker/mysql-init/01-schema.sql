@@ -5,6 +5,7 @@ CREATE DATABASE IF NOT EXISTS diet_management
     DEFAULT COLLATE utf8mb4_unicode_ci;
 
 USE diet_management;
+SET NAMES utf8mb4;
 
 -- 0.数字辅助表（用于存储过程生成日期序列等）
 DROP TABLE IF EXISTS numbers;
@@ -40,6 +41,7 @@ CREATE TABLE user (
     custom_target_cal INT         DEFAULT NULL                  COMMENT '用户自定义每日目标热量',
     recommend_cal    INT           NOT NULL                     COMMENT '系统推荐每日摄入热量',
     bmr              FLOAT         DEFAULT NULL                 COMMENT '基础代谢率',
+    avatar_url       VARCHAR(255)  DEFAULT NULL                 COMMENT '头像路径',
     bmi              FLOAT         GENERATED ALWAYS AS (ROUND(current_weight / POW(height/100, 2), 1)) STORED COMMENT 'BMI = 体重/身高²',
     created_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -67,6 +69,7 @@ CREATE TABLE food_category (
 DROP TABLE IF EXISTS food;
 CREATE TABLE food (
     food_id          INT           PRIMARY KEY AUTO_INCREMENT  COMMENT '食材主键',
+    user_id          INT           DEFAULT NULL                 COMMENT '创建用户(NULL=系统内置)',
     food_name        VARCHAR(100)  NOT NULL                     COMMENT '食材名称',
     category_id      INT           NOT NULL                     COMMENT '食材分类',
     unit             VARCHAR(20)   NOT NULL DEFAULT '100g'      COMMENT '计量单位',
@@ -95,7 +98,8 @@ CREATE TABLE nutrition (
 DROP TABLE IF EXISTS recipe;
 CREATE TABLE recipe (
     recipe_id        INT           PRIMARY KEY AUTO_INCREMENT  COMMENT '食谱主键',
-    admin_id         INT           NOT NULL                     COMMENT '维护管理员',
+    admin_id         INT           DEFAULT NULL                 COMMENT '维护管理员',
+    user_id          INT           DEFAULT NULL                 COMMENT '创建用户(NULL=系统内置)',
     recipe_name      VARCHAR(100)  NOT NULL                     COMMENT '菜品名称',
     type             VARCHAR(20)   NOT NULL                     COMMENT '餐次分类：早餐/午餐/晚餐/加餐',
     suitable_goals   VARCHAR(50)   NOT NULL DEFAULT 'healthy'   COMMENT '适合专区：healthy/lose_weight/gain_muscle',
@@ -104,7 +108,11 @@ CREATE TABLE recipe (
     cook_method      VARCHAR(50)   NOT NULL                     COMMENT '烹饪方式',
     forbid_tips      TEXT          DEFAULT NULL                 COMMENT '禁忌人群提示',
     total_calorie    INT           NOT NULL DEFAULT 0           COMMENT '总热量（触发器自动计算）',
+    base_calorie     INT           NOT NULL DEFAULT 0           COMMENT '基础热量',
+    added_calorie    INT           NOT NULL DEFAULT 0           COMMENT '额外热量(油/酱)',
     total_weight     FLOAT         NOT NULL DEFAULT 0           COMMENT '总重量（g）',
+    oil_g            FLOAT         NOT NULL DEFAULT 0           COMMENT '用油量(g)',
+    sauce_g          FLOAT         NOT NULL DEFAULT 0           COMMENT '用酱量(g)',
     created_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (admin_id) REFERENCES admin(admin_id),
@@ -233,6 +241,15 @@ CREATE TABLE ai_report (
     FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
     INDEX idx_report_user_date (user_id, start_date, end_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI健康周报表';
+
+-- 用户目标变更记录（30天内不可重复开通专区）
+CREATE TABLE user_goal (
+    id           INT           PRIMARY KEY AUTO_INCREMENT,
+    user_id      INT           DEFAULT NULL,
+    goal         VARCHAR(20)   DEFAULT NULL,
+    created_at   DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_goal_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户目标记录表';
 
 -- 初始化基础数据
 INSERT INTO food_category (category_name, sort_order) VALUES
