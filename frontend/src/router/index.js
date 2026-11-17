@@ -1,7 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  { path: '/', redirect: '/dashboard' },
+  {
+    path: '/',
+    name: 'Landing',
+    component: () => import('../views/LandingView.vue'),
+  },
   {
     path: '/login',
     name: 'Login',
@@ -87,7 +91,7 @@ router.beforeEach((to, from, next) => {
   const user = sessionStorage.getItem('user')
   const admin = sessionStorage.getItem('admin')
   const token = sessionStorage.getItem('token')
-  const publicPages = ['Login', 'AdminLogin', 'ForgotPassword']
+  const publicPages = ['Landing', 'Login', 'AdminLogin', 'ForgotPassword']
   // 没有 token 的旧会话一律回登录页，避免带着过期登录态一直报 401
   if (!publicPages.includes(to.name) && (!token || (!user && !admin))) {
     next('/login')
