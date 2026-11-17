@@ -97,11 +97,12 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import api from '../api/index.js'
 
 const router = useRouter()
-const tab = ref('login')
+const route = useRoute()
+const tab = ref(route.query.mode === 'register' ? 'register' : 'login')
 const loading = ref(false)
 const error = ref('')
 
