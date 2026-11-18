@@ -3,9 +3,9 @@
 USE diet_management;
 SET NAMES utf8mb4;
 
--- 管理员（密码: 123456）
+-- 管理员
 INSERT INTO admin (account, password, nickname) VALUES
-('admin', 'scrypt:32768:8:1$9GRAEMp1vrkXDSzt$09e4b1fbc61d5867b8cbb70f93d8a07a4d67521c09f71d7e6f0720dd63e100c5704fd86eebd2ec1375070736cf6ed09760cfe84bd8f045733f97c6709fa574d8', '系统管理员');
+('admin', 'scrypt:32768:8:1$oKg6jTehRGhvfTmJ$e8d29359710343fce0c6cea2b5a6f5c9c0ba535e85f78c3096269f4fe95194a232c632d482829b0b3bec8d9b5d7e25cfb069c75e17db829fcf1893ce6462b9ff', '系统管理员');
 
 -- 食材
 INSERT INTO food (food_name, category_id, unit) VALUES
@@ -90,7 +90,7 @@ INSERT INTO disease (disease_name, forbid_desc, forbid_keywords, forbid_rules) V
 ('高胆固醇', '减少膳食胆固醇和饱和脂肪，少吃动物内脏、蛋黄、鱿鱼等高胆固醇食物', '动物内脏,蛋黄,鱿鱼,墨鱼,虾子,蟹黄,肥肉,猪油,黄油', '{"max_fat":15}'),
 ('妊娠糖尿病', '孕期血糖控制，限制精制碳水、添加糖和高糖水果，少量多餐', '糖,蜂蜜,甜点,白米饭,白面包,奶茶,果汁,西瓜,荔枝', '{"max_sugar":5,"max_carbohydrate":25}');
 
--- 用户（密码: 123456）
+-- 用户
 INSERT INTO user (account, password, nickname, email, age, gender, height, current_weight, target_weight, activity_level, diet_goal, recommend_cal) VALUES
 ('zhangsan', 'scrypt:32768:8:1$9GRAEMp1vrkXDSzt$09e4b1fbc61d5867b8cbb70f93d8a07a4d67521c09f71d7e6f0720dd63e100c5704fd86eebd2ec1375070736cf6ed09760cfe84bd8f045733f97c6709fa574d8', '张三', 'zhangsan@example.com', 28, 1, 175, 80.0, 70.0, 2, 'lose_weight', 1800),
 ('lisi', 'scrypt:32768:8:1$9GRAEMp1vrkXDSzt$09e4b1fbc61d5867b8cbb70f93d8a07a4d67521c09f71d7e6f0720dd63e100c5704fd86eebd2ec1375070736cf6ed09760cfe84bd8f045733f97c6709fa574d8', '李四', 'lisi@example.com', 25, 0, 162, 60.0, 52.0, 1, 'healthy', 1400);
